@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CA Final Study Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="header-left">
+                <h1 class="app-title">🎓 CA Final Dashboard</h1>
+            </div>
+            <div class="header-right">
+                <button class="btn btn--outline" id="theme-toggle" aria-label="Toggle Theme">
+                    🌓 Mode
+                </button>
+                <div class="quick-stats-panel">
+                    <div class="stat-item">
+                        <div class="stat-label">Progress</div>
+                        <div class="stat-value" id="quick-completion">0%</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Days Left</div>
+                        <div class="stat-value" id="quick-days">--</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Today's Goal</div>
+                        <div class="stat-value" id="quick-today">0h</div>
+                    </div>
+                </div>
+                <button class="btn btn--primary" id="refresh-data">
+                    🔄 Sync Data
+                </button>
+            </div>
+        </header>
+
+        <div id="loading-screen" style="text-align: center; padding: 4rem; display: none;">
+            <div class="spinner"></div>
+            <h2 style="margin-top: 1rem; color: var(--text-secondary);">⏳ Syncing with Google Sheets...</h2>
+        </div>
+
+        <div class="dashboard" id="dashboard" style="display: none;">
+            <nav class="tabs">
+                <button class="tab active" data-tab="overview">Overview</button>
+                <button class="tab" data-tab="details">Details</button>
+                <button class="tab" data-tab="priorities">Priorities</button>
+                <button class="tab" data-tab="schedule">Schedule</button>
+                <button class="tab" data-tab="analytics">Analytics</button>
+                <button class="tab" data-tab="kpis">KPIs</button>
+                <button class="tab" data-tab="badges">🏆 Badges</button>
+            </nav>
+
+            <div class="tab-content" id="overview-content">
+                <h2>Module Overview</h2>
+                <div class="modules-grid" id="modules-grid"></div>
+            </div>
+
+            <div class="tab-content" id="details-content" style="display: none;">
+                <div class="module-header" style="margin-bottom: 1rem; flex-wrap: wrap; gap: 10px;">
+                    <h2>Chapter Details</h2>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <select class="btn btn--outline" id="subject-filter">
+                            <option value="all">All Subjects</option>
+                            <option value="AFM">AFM</option>
+                            <option value="Audit">Audit</option>
+                            <option value="FR">FR</option>
+                        </select>
+                        
+                        <select class="btn btn--outline" id="status-filter">
+                            <option value="all">All Status</option>
+                            <option value="completed">Completed</option>
+                            <option value="in progress">In Progress</option>
+                            <option value="not started">Not Started</option>
+                        </select>
+
+                        <select class="btn btn--outline" id="priority-filter">
+                            <option value="all">All Priorities</option>
+                            <option value="CRITICAL">Critical</option>
+                            <option value="HIGH">High</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="LOW">Low</option>
+                        </select>
+
+                        <input type="text" id="search-input" placeholder="Search chapters..." style="padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table" id="details-table">
+                        <thead>
+                            <tr>
+                                <th data-sort="Subject">Subject</th>
+                                <th data-sort="Module">Module</th>
+                                <th data-sort="Chapter">Chapter</th>
+                                <th data-sort="Weightage%">Weight %</th>
+                                <th data-sort="Status">Status</th>
+                                <th data-sort="Completed_Hours">Done (h)</th>
+                                <th data-sort="Pending_Hours">Left (h)</th>
+                                <th data-sort="Priority">Priority</th>
+                                <th data-sort="Total_Hours">Progress</th>
+                            </tr>
+                        </thead>
+                        <tbody id="details-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-content" id="priorities-content" style="display: none;">
+                <h2>Priority Tasks</h2>
+                <div class="priorities-container" id="priorities-container"></div>
+            </div>
+
+            <div class="tab-content" id="schedule-content" style="display: none;">
+                <div class="module-header">
+                    <h2>Study Schedule</h2>
+                    <div style="display: flex; gap: 10px;">
+                        <select class="btn btn--outline" id="schedule-filter">
+                            <option value="all">All Subjects</option>
+                            <option value="AFM">AFM</option>
+                            <option value="Audit">Audit</option>
+                            <option value="FR">FR</option>
+                        </select>
+                        <select class="btn btn--outline" id="schedule-status-filter">
+                            <option value="all">All Status</option>
+                            <option value="planned">Planned (Pending)</option>
+                            <option value="done">Done</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="schedule-grid" id="schedule-grid"></div>
+            </div>
+
+            <div class="tab-content" id="analytics-content" style="display: none;">
+                <h2>Analytics</h2>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Overall Completion</h3>
+                        <div class="chart-container"><canvas id="completion-chart"></canvas></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Hours by Subject</h3>
+                        <div class="chart-container"><canvas id="subject-hours-chart"></canvas></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Completed vs Pending</h3>
+                        <div class="chart-container"><canvas id="subject-comparison-chart"></canvas></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Priority Mix</h3>
+                        <div class="chart-container"><canvas id="priority-chart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="kpis-content" style="display: none;">
+                <h2>Performance KPIs</h2>
+                <div class="kpis-grid" id="kpis-grid"></div>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Subject Breakdown</h3>
+                        <div id="subject-breakdown"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Study Pace (14 Days)</h3>
+                        <div class="chart-container"><canvas id="progress-trend-chart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="badges-content" style="display: none;">
+                <h2>Achievements</h2>
+                <div class="badges-grid" id="badges-grid"></div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
